@@ -15,7 +15,16 @@ sort time
 gen time_perc = _n/_N
 //use it later during the robustness check, when results will be ready (add/remove 5% fastest participants)
 
-gen male=sex==2
+//puzzles PART DATA CLEANING
+/*
+global puzzles_p "p1 p2 p5 p6 p9_h1_r1 p9_h1_r2 p9_h1_r3 p9_h1_r4 p9_h1_r5 p9_h1_r6 p10 p13 p14"
+foreach puzzle in $puzzles_p {
+display "`puzzle'"
+kwallis `puzzle', by(treatment)
+}
+
+global puzzles "base_rate_neglect allais1 allais2 after_how_many_days conditional_prob asian_disease loss_averse compound_prob prob_jump unreal_opt peer_effect" 
+*/
 
 //VACCINE PART DATA CLEANING
 rename (p37_1_r1	p37_1_r2	p37_1_r3	p37_1_r4	p37_1_r5	p37_1_r6	p37_1_r7	p37_8_r1	p37_8_r2	p37_8_r3	p37_8_r4	p37) (v_producer_reputation	v_efficiency	v_safety	v_scarcity	v_other_want_it	v_scientific_authority	v_ease_personal_restrictions	v_p_pay0	v_p_gets70	v_p_pays10	v_p_pays70	v_decision) 
@@ -32,6 +41,8 @@ sum check_vs
 
 //DEMOGRAPHICS DATA CLEANING
 //wojewodstwo is ommited, because of no theoretical reason to include it
+gen male=sex==2
+
 rename (age year) (age_category age)
 rename (miasta wyksztalcenie) (city_population edu)
 
@@ -90,7 +101,15 @@ global demogr_int "male age higher_edu"
 rename warunek treatment //1.COVID 2.Cold, 3.Unemployment
 global order_effects "i.treatment"
 
+//to add later into puzzles regression
+rename kolejnosc_pytan order_puzzles
+replace order_puzzles=subinstr(order_puzzles,"p","",.)
+split order_puzzles, p("-")
+
+
+
 //EMOTIONS
+
 ren (p17_r1 p17_r2 p17_r3 p17_r4 p17_r5 p17_r6) (e_happiness e_fear e_anger e_disgust e_sadness e_surprise)
 global emotions "e_happiness e_fear e_anger e_disgust e_sadness e_surprise"
 
@@ -119,17 +138,10 @@ egen conspiracy_score=rowmean($conspiracy)
 //VOTING
 rename m20 voting
 
-
 replace voting=0 if voting==.a
 replace voting=8 if voting==5|voting==6
 
-
-
-
 global voting "i.voting"
-
-
-
 
 //covid impact estimations
 rename (p24 p25) (cases death)
@@ -202,7 +214,6 @@ est table m_1 m_2 m_3 m_4 m_5 m_6 m_7, b(%12.3f) var(20) star(.01 .05 .10) stats
 //no interactions detected
 quietly ologit v_decision $vaccine_vars 
 est store m_0
-
 quietly ologit v_decision $vaccine_vars $demogr 
 est store m_1
 quietly ologit v_decision $vaccine_vars $demogr $emotions $risk $worry $voting $control $informed conspiracy_score $covid_impact $order_effects
@@ -213,3 +224,70 @@ est table m_0 m_1 m_2, b(%12.3f) var(20) star(.01 .05 .10) stats(N)
 
 // FIGURES
 tab v_decision, generate(dec)
+/////////**********************************************////////////////
+/////////**********************************************////////////////
+/////////**********************************************////////////////
+//PUZZLES DATA CLEANING
+// [P1] Przypuśćmy, że 15% obywateli Polski jest zakażonych koronawirusem, a 85% jest zdrowych. Test mający wykryć koronawirusa na wczesnym etapie ma skuteczność 80%, tzn., gdy zbada się osobę faktycznie zakażoną, to jest 80% szans na to, że test wykaże, że jest zakażona, a 20% że zdrowa. Gdy zbada się osobę faktycznie zdrową, jest 80% szans, że test wykaże, że jest zdrowa, a 20% że zakażona.
+gen base_rate_negl_normative=p1>=40& p1<=42
+	tab base_rate_negl_normative
+
+/* p2 is about 10 000 confirmed cases, p13 is about 10 confirmed cases
+p2 Załóżmy, że przebadano losową próbę Polaków i okazało się, że wśród badanych było 10 000 osób aktualnie zakażonych koronawirusem. Stanowi to 1% badanej próby.
+Czy ta informacja sprawiłaby, że był(a)byś mniej czy bardziej zaniepokojony pandemią niż jesteś obecnie? 
+[rotacja]
+bardziej zaniepokojona(-y)
+mniej zaniepokojona(-y)
+
+gen beliefs_update_normative=...?
+*/
+gen beliefs_update_normative=1
+
+/*
+Władze pewnego miasta przygotowują się do konfrontacji z nową falą pandemii. Można się spodziewać, że zabije ona ok. 600 mieszkańców. Rozważane są dwa programy prewencyjne. Epidemiolodzy szacują, że ich skutki dla tych statystycznych 600 osób będą następujące:
+Program A: 200 osób zostanie uratowanych
+Program B: z prawdopodobieństwem 1/3 zostanie uratowanych 600 osób, z prawdopodobieństwem 2/3 nikt nie zostanie uratowany
+Który program powinno się wdrożyć? Zaznacz
+[rotacja]
+Program A
+Program B
+-----------------------------------
+[P5 - opcja 2] Władze pewnego miasta przygotowują się do konfrontacji z nową falą pandemii. Można się spodziewać, że zabije ona ok. 600 mieszkańców. Rozważane są dwa programy prewencyjne. Epidemiolodzy szacują, że ich skutki dla tych statystycznych 600 osób będą następujące:
+Program A: 400 osób umrze
+Program B: z prawdopodobieństwem 1/3 nikt nie umrze, z prawdopodobieństwem 2/3 umrą wszyscy
+Który program powinno się wdrożyć? Zaznacz
+[rotacja]
+Program A
+Program B
+*/
+rename  p5_losowanie asian_disease_option
+gen asian_disease_pos_framing=asian_disease_option==1
+gen asian_disease_neg_framing=asian_disease_option==2
+gen asian_disease_sure_option=p5==1
+gen asian_disease_unsure_option=p5==2
+tab asian_disease_pos_framing asian_disease_sure_option
+ttest asian_disease_sure_option, by(asian_disease_pos_framing)
+
+//Śmiertelność wśród pacjentów z koronawirusem zależy od ich wieku. Załóżmy, że oszacowane prawdopodobieństwo śmierci w ciągu miesiąca od zakażenia dla mężczyzn w poszczególnych grupach wiekowych kształtuje się następująco:
+//Jan ma 61 lat. Jak myślisz, jakie jest prawdopodobieństwo, że Jan umrze w ciągu miesiąca od zakażenia? 
+gen death_prob_normative=p6<1.9&p6>0.5
+tab p6_uwagi
+
+//[P9] W skali kraju można się spodziewać jeszcze około 20 000 śmiertelnych ofiar koronawirusa. Zaproponowano zmianę procedury postępowania z chorymi w szpitalach zakaźnych. Zmiana może okazać się dobra lub zła. 
+//Spodziewane skutki i ich prawdopodobieństwa przedstawiono w tabeli. Dla każdego z wierszy wskaż, czy w danej sytuacji uważasz, że taka zmiana powinna zostać wprowadzona czy też nie. 
+
+capture drop p9_consistent_answer
+gen p9_consistent_answer=0
+replace p9_consistent_answer=1 if p9_h1_r1==1 & p9_h1_r2==1 & p9_h1_r3==1 & p9_h1_r4==1 & p9_h1_r5==1 & p9_h1_r6==1
+replace p9_consistent_answer=1 if p9_h1_r1==1 & p9_h1_r2==1 & p9_h1_r3==1 & p9_h1_r4==1 & p9_h1_r5==1 & p9_h1_r6==2
+replace p9_consistent_answer=1 if p9_h1_r1==1 & p9_h1_r2==1 & p9_h1_r3==1 & p9_h1_r4==1 & p9_h1_r5==2 & p9_h1_r6==2
+replace p9_consistent_answer=1 if p9_h1_r1==1 & p9_h1_r2==1 & p9_h1_r3==1 & p9_h1_r4==2 & p9_h1_r5==2 & p9_h1_r6==2
+replace p9_consistent_answer=1 if p9_h1_r1==1 & p9_h1_r2==1 & p9_h1_r3==2 & p9_h1_r4==2 & p9_h1_r5==2 & p9_h1_r6==2
+replace p9_consistent_answer=1 if p9_h1_r1==1 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h1_r4==2 & p9_h1_r5==2 & p9_h1_r6==2
+replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h1_r4==2 & p9_h1_r5==2 & p9_h1_r6==2
+replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h1_r4==2 & p9_h1_r5==2 & p9_h1_r6==1
+replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h1_r4==2 & p9_h1_r5==1 & p9_h1_r6==1
+replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h1_r4==1 & p9_h1_r5==1 & p9_h1_r6==1
+replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==1 & p9_h1_r4==1 & p9_h1_r5==1 & p9_h1_r6==1
+replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==1 & p9_h1_r3==1 & p9_h1_r4==1 & p9_h1_r5==1 & p9_h1_r6==1
+tab p9_consistent_answer
