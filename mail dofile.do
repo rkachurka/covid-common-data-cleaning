@@ -19,9 +19,12 @@ gen male=sex==2
 
 //VACCINE PART DATA CLEANING
 rename (p37_1_r1	p37_1_r2	p37_1_r3	p37_1_r4	p37_1_r5	p37_1_r6	p37_1_r7	p37_8_r1	p37_8_r2	p37_8_r3	p37_8_r4	p37) (v_producer_reputation	v_efficiency	v_safety	v_scarcity	v_other_want_it	v_scientific_authority	v_ease_personal_restrictions	v_p_pay0	v_p_gets70	v_p_pays10	v_p_pays70	v_decision) 
-global vaccine_vars "v_producer_reputation	v_efficiency	v_safety	v_scarcity	v_other_want_it	v_scientific_authority	v_ease_personal_restrictions	v_p_gets70	v_p_pays10	v_p_pays70"
+global vaccine_vars "v_producer_reputation	v_efficiency	v_safety		v_other_want_it	v_scientific_authority	v_ease_personal_restrictions	v_p_gets70	v_p_pays10	v_p_pays70" // i leave out scarcity -- sth that supposedly everybody knows. we can't estimate all because of ariadna's error anyway
 global vaccine_short "v_producer_reputation	v_efficiency	v_safety	v_scarcity	v_other_want_it	v_scientific_authority	v_ease_personal_restrictions"
 global prices "v_p_gets70	v_p_pays10	v_p_pays70"
+
+egen check_vs=rowmean($vaccine_short)
+sum check_vs
 
 //info in wrong columns, pls check for more such cases!
 //replace v_decision=P390 if v_decision==""
@@ -195,12 +198,18 @@ quietly ologit v_decision $vaccine_vars $demogr $emotions $risk $worry $voting $
 est store m_7
 test $int_consp_manip
 
-est table m_1 m_2 m_3 m_4 m_5 m_6 m7, b(%12.3f) var(20) star(.01 .05 .10) stats(N)
+est table m_1 m_2 m_3 m_4 m_5 m_6 m_7, b(%12.3f) var(20) star(.01 .05 .10) stats(N)
 //no interactions detected
+quietly ologit v_decision $vaccine_vars 
+est store m_0
 
 quietly ologit v_decision $vaccine_vars $demogr 
 est store m_1
 quietly ologit v_decision $vaccine_vars $demogr $emotions $risk $worry $voting $control $informed conspiracy_score $covid_impact $order_effects
 est store m_2
 
-est table m_1 m_2, b(%12.3f) var(20) star(.01 .05 .10) stats(N)
+est table m_0 m_1 m_2, b(%12.3f) var(20) star(.01 .05 .10) stats(N)
+// XXX or m_2 m_1 m_0? easier to see which line is which? 
+
+// FIGURES
+tab v_decision, generate(dec)
