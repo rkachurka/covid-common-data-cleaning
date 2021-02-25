@@ -36,6 +36,7 @@ egen check_vs=rowmean($vaccine_short)
 sum check_vs
 
 //info in wrong columns, pls check for more such cases!
+//what about mean? which wrong columns?
 //replace v_decision=P390 if v_decision==""
 //RK: pls elaborate on above in details, I dont undesrtand these lines. I double checked, all is fine with columns
 
@@ -99,14 +100,20 @@ global demogr_int "male age higher_edu"
 //********************************************//
 //OTHER DATA CLEANING
 rename warunek treatment //1.COVID 2.Cold, 3.Unemployment
+gen t_covid=treatment==1
+gen t_cold=treatment==2
+gen t_unempl=treatment==3
+global treatments "t_cold t_unempl"
 global order_effects "i.treatment"
 
 //to add later into puzzles regression
 rename kolejnosc_pytan order_puzzles
 replace order_puzzles=subinstr(order_puzzles,"p","",.)
 split order_puzzles, p("-")
-
-
+global order_puzzles "order_puzzles1 order_puzzles2 order_puzzles3 order_puzzles4 order_puzzles5 order_puzzles6 order_puzzles7 order_puzzles8"
+foreach x in $order_puzzles {
+destring `x', replace
+}
 
 //EMOTIONS
 
@@ -212,11 +219,12 @@ test $int_consp_manip
 
 est table m_1 m_2 m_3 m_4 m_5 m_6 m_7, b(%12.3f) var(20) star(.01 .05 .10) stats(N)
 //no interactions detected
+
 quietly ologit v_decision $vaccine_vars 
 est store m_0
 quietly ologit v_decision $vaccine_vars $demogr 
 est store m_1
-quietly ologit v_decision $vaccine_vars $demogr $emotions $risk $worry $voting $control $informed conspiracy_score $covid_impact $order_effects
+quietly ologit v_decision $vaccine_vars $demogr $emotions $risk $worry $voting $control $informed conspiracy_score $covid_impact $treatments
 est store m_2
 
 est table m_0 m_1 m_2, b(%12.3f) var(20) star(.01 .05 .10) stats(N)
@@ -230,8 +238,8 @@ tab v_decision, generate(dec)
 //PUZZLES DATA CLEANING
 // [P1] Przypuśćmy, że 15% obywateli Polski jest zakażonych koronawirusem, a 85% jest zdrowych. Test mający wykryć koronawirusa na wczesnym etapie ma skuteczność 80%, tzn., gdy zbada się osobę faktycznie zakażoną, to jest 80% szans na to, że test wykaże, że jest zakażona, a 20% że zdrowa. Gdy zbada się osobę faktycznie zdrową, jest 80% szans, że test wykaże, że jest zdrowa, a 20% że zakażona.
 gen base_rate_negl_normative=p1>=40& p1<=42
-	tab base_rate_negl_normative
-
+tab base_rate_negl_normative
+tab p1_uwagi
 /* p2 is about 10 000 confirmed cases, p13 is about 10 confirmed cases
 p2 Załóżmy, że przebadano losową próbę Polaków i okazało się, że wśród badanych było 10 000 osób aktualnie zakażonych koronawirusem. Stanowi to 1% badanej próby.
 Czy ta informacja sprawiłaby, że był(a)byś mniej czy bardziej zaniepokojony pandemią niż jesteś obecnie? 
@@ -241,8 +249,12 @@ mniej zaniepokojona(-y)
 
 gen beliefs_update_normative=...?
 */
-gen beliefs_update_normative=1
-
+capture drop beliefs_update_normative
+gen beliefs_update_normative=0
+replace beliefs_update_normative=1 if p2==2 & p13==2 //current rate of infection is 3-4% so 1% should make us less worried
+tab beliefs_update_normative
+tab p2_uwagi
+tab p13_uwagi
 /*
 Władze pewnego miasta przygotowują się do konfrontacji z nową falą pandemii. Można się spodziewać, że zabije ona ok. 600 mieszkańców. Rozważane są dwa programy prewencyjne. Epidemiolodzy szacują, że ich skutki dla tych statystycznych 600 osób będą następujące:
 Program A: 200 osób zostanie uratowanych
@@ -275,7 +287,6 @@ tab p6_uwagi
 
 //[P9] W skali kraju można się spodziewać jeszcze około 20 000 śmiertelnych ofiar koronawirusa. Zaproponowano zmianę procedury postępowania z chorymi w szpitalach zakaźnych. Zmiana może okazać się dobra lub zła. 
 //Spodziewane skutki i ich prawdopodobieństwa przedstawiono w tabeli. Dla każdego z wierszy wskaż, czy w danej sytuacji uważasz, że taka zmiana powinna zostać wprowadzona czy też nie. 
-
 capture drop p9_consistent_answer
 gen p9_consistent_answer=0
 replace p9_consistent_answer=1 if p9_h1_r1==1 & p9_h1_r2==1 & p9_h1_r3==1 & p9_h1_r4==1 & p9_h1_r5==1 & p9_h1_r6==1
@@ -291,3 +302,57 @@ replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h
 replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==1 & p9_h1_r4==1 & p9_h1_r5==1 & p9_h1_r6==1
 replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==1 & p9_h1_r3==1 & p9_h1_r4==1 & p9_h1_r5==1 & p9_h1_r6==1
 tab p9_consistent_answer
+gen p9_do_nothing=p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h1_r4==2 & p9_h1_r5==2 & p9_h1_r6==2
+tab p9_do_nothing
+//how to title this var?
+gen p9_normative=0
+replace p9_normative=1 if p9_h1_r1==1 & p9_consistent_answer==1
+replace p9_normative=1 if p9_h1_r1==2 & p9_h1_r2==1 & p9_h1_r3==1 & p9_h1_r4==1 & p9_h1_r5==1 & p9_h1_r6==1
+tab p9_normative
+
+//[P11] Załóżmy, że jesteś teraz zdrowy/a- nie masz koronawirusa. Spotykasz 100 osób. Przy każdym spotkaniu, które rozpoczynasz będąc zdrowy/a, masz 99,5% szans na to, że pozostaniesz zdrowy/a (nie zostaniesz zakażony/a koronawirusem). 
+//Jakie jest prawdopodobieństwo, że pozostaniesz zdrowy/a po ostatnim ze 100 spotkań?
+gen compound_prob_normative=p10>=60& p10<=66
+replace compound_prob_normative=1 if p10>=0.60& p10<=0.66
+tab compound_prob_normative
+tab p10_uwagi
+
+//[P15] W Braniewie odsetek zakażonych koronawirusem codziennie się podwaja. Po 12 dniach zakażeni są wszyscy. 
+//Po ilu dniach zakażona była połowa mieszkańców?
+gen lilypad_normative=p14==11
+tab lilypad_normative
+tab p14_uwagi
+
+//generating performance
+sum *_normative
+global normative "base_rate_negl_normative death_prob_normative beliefs_update_normative p9_normative compound_prob_normative lilypad_normative"
+gen performance = 0
+foreach x in $normative {
+ replace performance=performance+`x'
+}
+sum performance
+
+//short answer if want to be vaccinated or not
+gen v_decision_yes=v_decision==3|v_decision==4
+
+//performance determinants
+ologit performance $demogr
+est store m_0
+ologit performance $demogr $treatments $emotions
+est store m_1
+ologit performance $demogr $treatments $emotions v_decision_yes $risk $worry $voting $control $informed conspiracy_score $covid_impact 
+
+est store m_2
+est table m_0 m_1 m_2, b(%12.3f) var(20) star(.01 .05 .10) stats(N)
+//no order effect of var "order_puzzles1"
+
+//fear determinants
+ologit e_fear $demogr 
+est store m_0
+ologit e_fear $demogr $treatments 
+est store m_1
+ologit e_fear $demogr $treatments v_decision_yes $risk $worry $voting $control $informed conspiracy_score $covid_impact
+est store m_2
+est table m_0 m_1 m_2, b(%12.3f) var(20) star(.01 .05 .10) stats(N)
+
+//several vars to be encoded - e.g. wearing masks
