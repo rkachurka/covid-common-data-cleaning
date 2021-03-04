@@ -1,12 +1,22 @@
+
 clear all
 // install package to import spss file
 // net from http://radyakin.org/transfer/usespss/beta
 //usespss "data.sav"
 //saveold "G:\Shared drives\Koronawirus\studies\5 data analysis (Ariadna data)\data_stata_format.dta", version(13)
-capture use "G:\Shared drives\Koronawirus\studies\5 data analysis (Ariadna data)\data_stata_format.dta", clear
-capture use "G:\Dyski współdzielone\Koronawirus\studies\5 data analysis (Ariadna data)\data_stata_format.dta", clear
+use data_stata_format.dta, clear
 
+// ideas for the new wave:
+// allow loss seeking: 27% is willing to take a +5000 -5000 50/50 gamble
+// idea: to compare distrubution of answers for 2 versions of Ariadna data
 
+capture cd "G:\Shared drives\Koronawirus\studies\5 data analysis (Ariadna data)"
+capture cd "G:\Dyski współdzielone\Koronawirus\studies\5 data analysis (Ariadna data)"
+
+// IDEA: split it into puzzles and vaxx
+// move all initial data cleaning to universal_data_cleaning.do
+
+//do universal_data_cleaning.do
 
 
 //XXX to remove too fast and too slow participants, e.g. fastest (5%) slowest (1%)
@@ -39,6 +49,13 @@ sum check_vs
 //what about mean? which wrong columns?
 //replace v_decision=P390 if v_decision==""
 //RK: pls elaborate on above in details, I dont undesrtand these lines. I double checked, all is fine with columns
+
+global uwagi "p1_uwagi p2_uwagi p5_uwagi p6_uwagi p9_uwagi p10_uwagi p13_uwagi p14_uwagi"
+
+foreach uw in $uwagi {
+list `uw' if `uw'!=""
+}
+
 
 //DEMOGRAPHICS DATA CLEANING
 //wojewodstwo is ommited, because of no theoretical reason to include it
@@ -96,7 +113,7 @@ gen status_student=m12==7
 
 global demogr "male age i.city_population secondary_edu higher_edu $wealth health_poor health_good had_covid  covid_friends religious i.religious_freq status_unemployed status_pension status_student"
 global demogr_int "male age higher_edu"
-
+global health_advice "p26 p30_r1"
 //********************************************//
 //OTHER DATA CLEANING
 rename warunek treatment //1.COVID 2.Cold, 3.Unemployment
@@ -105,7 +122,8 @@ gen t_cold=treatment==2
 gen t_unempl=treatment==3
 global treatments "t_cold t_unempl"
 global order_effects "i.treatment"
-
+label define treats 1 "COVID" 2 "Cold" 3 "Unemployment"
+label values treatment treats
 //to add later into puzzles regression
 rename kolejnosc_pytan order_puzzles
 replace order_puzzles=subinstr(order_puzzles,"p","",.)
@@ -237,8 +255,9 @@ tab v_decision, generate(dec)
 /////////**********************************************////////////////
 //PUZZLES DATA CLEANING
 // [P1] Przypuśćmy, że 15% obywateli Polski jest zakażonych koronawirusem, a 85% jest zdrowych. Test mający wykryć koronawirusa na wczesnym etapie ma skuteczność 80%, tzn., gdy zbada się osobę faktycznie zakażoną, to jest 80% szans na to, że test wykaże, że jest zakażona, a 20% że zdrowa. Gdy zbada się osobę faktycznie zdrową, jest 80% szans, że test wykaże, że jest zdrowa, a 20% że zakażona.
-gen base_rate_negl_normative=p1>=40& p1<=42
+gen base_rate_negl_normative=p1>=19& p1<=51 // much more lenient than initially
 tab base_rate_negl_normative
+ 
 tab p1_uwagi
 /* p2 is about 10 000 confirmed cases, p13 is about 10 confirmed cases
 p2 Załóżmy, że przebadano losową próbę Polaków i okazało się, że wśród badanych było 10 000 osób aktualnie zakażonych koronawirusem. Stanowi to 1% badanej próby.
@@ -296,7 +315,7 @@ replace p9_consistent_answer=1 if p9_h1_r1==1 & p9_h1_r2==1 & p9_h1_r3==1 & p9_h
 replace p9_consistent_answer=1 if p9_h1_r1==1 & p9_h1_r2==1 & p9_h1_r3==2 & p9_h1_r4==2 & p9_h1_r5==2 & p9_h1_r6==2
 replace p9_consistent_answer=1 if p9_h1_r1==1 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h1_r4==2 & p9_h1_r5==2 & p9_h1_r6==2
 replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h1_r4==2 & p9_h1_r5==2 & p9_h1_r6==2
-replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h1_r4==2 & p9_h1_r5==2 & p9_h1_r6==1
+replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h1_r4==2 & p9_h1_r5==2 & p9_h1_r6==1 // how is this consistent if you switch from no to yes? it makes no sense
 replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h1_r4==2 & p9_h1_r5==1 & p9_h1_r6==1
 replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h1_r4==1 & p9_h1_r5==1 & p9_h1_r6==1
 replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==1 & p9_h1_r4==1 & p9_h1_r5==1 & p9_h1_r6==1
@@ -304,6 +323,9 @@ replace p9_consistent_answer=1 if p9_h1_r1==2 & p9_h1_r2==1 & p9_h1_r3==1 & p9_h
 tab p9_consistent_answer
 gen p9_do_nothing=p9_h1_r1==2 & p9_h1_r2==2 & p9_h1_r3==2 & p9_h1_r4==2 & p9_h1_r5==2 & p9_h1_r6==2
 tab p9_do_nothing
+
+egen loss_aversion=rsum(p9_h1_r*)
+replace loss_aversion=((loss_aversion-6)*1000+4500)/5000 
 //how to title this var?
 gen p9_normative=0
 replace p9_normative=1 if p9_h1_r1==1 & p9_consistent_answer==1
@@ -315,6 +337,10 @@ tab p9_normative
 gen compound_prob_normative=p10>=60& p10<=66
 replace compound_prob_normative=1 if p10>=0.60& p10<=0.66
 tab compound_prob_normative
+capture drop compound_nonsense
+gen compound_nonsense = p10==99.5
+sum compound_nonse
+gen compound_non_nonsense=1-compound_nonsense
 tab p10_uwagi
 
 //[P15] W Braniewie odsetek zakażonych koronawirusem codziennie się podwaja. Po 12 dniach zakażeni są wszyscy. 
@@ -325,12 +351,21 @@ tab p14_uwagi
 
 //generating performance
 sum *_normative
-global normative "base_rate_negl_normative death_prob_normative beliefs_update_normative p9_normative compound_prob_normative lilypad_normative"
+global normative "base_rate_negl_normative death_prob_normative beliefs_update_normative compound_non_nonsense lilypad_normative"
 gen performance = 0
 foreach x in $normative {
- replace performance=performance+`x'
+ replace performance=performance+`x' // MK: what is that? why not egen performance=rsum($normative)? also, wouldn't be more informative to look at mean, not sum?
 }
-sum performance
+sum performance 
+
+
+foreach x in $normative {
+kwallis `x', by(treatment)
+ }
+
+ 
+tabstat $normative loss_ave, statistics( mean ) by(treatment)
+
 
 //short answer if want to be vaccinated or not
 gen v_decision_yes=v_decision==3|v_decision==4
@@ -338,7 +373,7 @@ gen v_decision_yes=v_decision==3|v_decision==4
 //performance determinants
 ologit performance $demogr
 est store m_0
-ologit performance $demogr $treatments $emotions
+ologit performance $demogr $treatments $emotions 
 est store m_1
 ologit performance $demogr $treatments $emotions v_decision_yes $risk $worry $voting $control $informed conspiracy_score $covid_impact 
 
@@ -351,8 +386,9 @@ ologit e_fear $demogr
 est store m_0
 ologit e_fear $demogr $treatments 
 est store m_1
-ologit e_fear $demogr $treatments v_decision_yes $risk $worry $voting $control $informed conspiracy_score $covid_impact
+ologit e_fear $demogr $health_advice $treatments v_decision_yes $risk $worry $voting $control $informed conspiracy_score $covid_impact
 est store m_2
 est table m_0 m_1 m_2, b(%12.3f) var(20) star(.01 .05 .10) stats(N)
 
 //several vars to be encoded - e.g. wearing masks
+
