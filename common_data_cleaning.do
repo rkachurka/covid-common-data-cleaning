@@ -30,7 +30,7 @@ list `uw' if `uw'!=""
 //DEMOGRAPHICS DATA CLEANING
 //wojewodstwo is ommited, because of no theoretical reason to include it
 gen male=sex==2
-
+gen age2=age^2
 rename (age year) (age_category age)
 //later check consistency of answers
 
@@ -132,3 +132,4 @@ global covid_impact "subj_est_cases_ln subj_est_death_l"
 global demogr "male age i.city_population secondary_edu higher_edu $wealth health_poor health_good had_covid  covid_friends religious i.religious_freq status_unemployed status_pension status_student"
 global demogr_int "male age higher_edu"
 global health_advice "mask_wearing distancing"
+
