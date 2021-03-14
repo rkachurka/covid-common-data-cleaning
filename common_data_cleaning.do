@@ -30,8 +30,10 @@ list `uw' if `uw'!=""
 //DEMOGRAPHICS DATA CLEANING
 //wojewodstwo is ommited, because of no theoretical reason to include it
 gen male=sex==2
-gen age2=age^2
 rename (age year) (age_category age)
+replace age=2021-age
+gen age2=age^2
+
 //later check consistency of answers
 
 rename (miasta wyksztalcenie) (city_population edu)
