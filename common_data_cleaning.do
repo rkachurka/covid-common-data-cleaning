@@ -7,6 +7,7 @@ clear all
 
 capture cd "G:\Shared drives\Koronawirus\studies\5 data analysis (Ariadna data)"
 capture cd "G:\Dyski współdzielone\Koronawirus\studies\5 data analysis (Ariadna data)"
+capture cd "/Volumes/GoogleDrive/Shared drives/Koronawirus/studies/5 common data cleaning (Ariadna data)"
 use data_stata_format.dta, clear
 
 // define variable that slows percentile, by time 
