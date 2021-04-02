@@ -1,14 +1,30 @@
 clear all
-// install package to import spss file
-// net from http://radyakin.org/transfer/usespss/beta
-//usespss "data.sav"
-//saveold "G:\Shared drives\Koronawirus\studies\5 data analysis (Ariadna data)\data_stata_format.dta", version(13)
+/*
 
+import spss using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\archive\Zbior_WNE1_N3000_nowa_waga.sav", clear
+saveold "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\nowa_waga.dta", version(13)
+
+import spss using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\archive\Zbior_WNE1_N3000_data_1.sav", clear
+saveold "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\datetime.dta", version(13)
+
+capture cd "G:\Shared drives\Koronawirus\studies\5 data analysis (Ariadna data)"
+capture cd "G:\Dyski współdzielone\Koronawirus\studies\5 data analysis (Ariadna data)"
+capture cd "/Volumes/GoogleDrive/Shared drives/Koronawirus/studies/5 common data cleaning (Ariadna data)"
+import spss using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\archive\data.sav", clear
+rename Id ID
+merge 1:1 ID using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\nowa_waga.dta"
+capture drop _merge
+merge 1:1 ID using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\datetime.dta"
+capture drop _merge
+rename (waga waga2) (waga_old waga)
+saveold "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\data_stata_format.dta", version(13)
+*/
 
 capture cd "G:\Shared drives\Koronawirus\studies\5 data analysis (Ariadna data)"
 capture cd "G:\Dyski współdzielone\Koronawirus\studies\5 data analysis (Ariadna data)"
 capture cd "/Volumes/GoogleDrive/Shared drives/Koronawirus/studies/5 common data cleaning (Ariadna data)"
 use data_stata_format.dta, clear
+
 
 // define variable that slows percentile, by time 
 sort time
