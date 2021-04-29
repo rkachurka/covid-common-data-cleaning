@@ -1,28 +1,180 @@
+// ideas:
+// robustness check: to compare distrubution of answers for Ariadna data
+// robustness check: to drop out 5% of the fastest subjects
+// to remove participant with inconsistent justification of vax decision
+// to remove all other categories if there is a category "just_yes" OR just_no
+
 clear all
+
+//INTSALATION:
+//ssc install scheme-burd, replace
+capture set scheme burd
+//capture ssc install tabstatmat
+
+//working folder
+//pls use the full path to the folder with wave1/2 data, not to the root folder \studies\, it creates a mess (output files (pics, tables and etc) are created in the root folder)
+capture cd "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)"
+capture cd "G:\Dyski współdzielone\Koronawirus\studies\5 common data cleaning (wave1)"
+capture cd "/Volumes/GoogleDrive/Shared drives/Koronawirus/studies/5 common data cleaning (wave1)"
+
 /*
+//creation of stata data files for later merge
+import spss using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\archive\Zbior_WNE1_N3000_nowa_waga.sav", clear
+save "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\nowa_waga.dta", replace
 
-import spss using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\archive\Zbior_WNE1_N3000_nowa_waga.sav", clear
-saveold "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\nowa_waga.dta", version(13)
+import spss using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\archive\Zbior_WNE1_N3000_data_1.sav", clear
+save "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\datetime.dta", replace
 
-import spss using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\archive\Zbior_WNE1_N3000_data_1.sav", clear
-saveold "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\datetime.dta", version(13)
-
-capture cd "G:\Shared drives\Koronawirus\studies\5 data analysis (Ariadna data)"
-capture cd "G:\Dyski współdzielone\Koronawirus\studies\5 data analysis (Ariadna data)"
-capture cd "/Volumes/GoogleDrive/Shared drives/Koronawirus/studies/5 common data cleaning (Ariadna data)"
-import spss using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\archive\data.sav", clear
+//merge with main data
+import spss using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\archive\data.sav", clear
 rename Id ID
-merge 1:1 ID using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\nowa_waga.dta"
+merge 1:1 ID using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\nowa_waga.dta"
 capture drop _merge
-merge 1:1 ID using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\datetime.dta"
+merge 1:1 ID using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\datetime.dta"
 capture drop _merge
 rename (waga waga2) (waga_old waga)
-saveold "G:\Shared drives\Koronawirus\studies\5 common data cleaning (Ariadna data)\data_stata_format.dta", version(13)
+save "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\data_stata_format.dta", replace
 */
 
-capture cd "G:\Shared drives\Koronawirus\studies\5 data analysis (Ariadna data)"
-capture cd "G:\Dyski współdzielone\Koronawirus\studies\5 data analysis (Ariadna data)"
-capture cd "/Volumes/GoogleDrive/Shared drives/Koronawirus/studies/5 common data cleaning (Ariadna data)"
+
+/// CREATION OF POPULATION AND CASES DATA
+/*
+clear all
+import excel "G:\Shared drives\Koronawirus\studies\covid cases data.xlsx", sheet("data format wave1") cellrange(A1:B3118) firstrow clear
+save "G:\Shared drives\Koronawirus\studies\data format wave1.dta", replace
+
+clear all
+import excel "covid cases data.xlsx", sheet("population per region") cellrange(A8:E23)
+rename A region_id
+rename B region
+rename E population
+keep region_id region population
+save "population per region.dta", replace
+
+clear all
+import excel "covid cases data.xlsx", sheet("covid cases per region") cellrange(A2:J770) firstrow clear
+recast double data
+save "covid cases per region.dta", replace
+
+clear all
+import excel "covid cases data.xlsx", sheet("covid cases total") cellrange(A2:M51) firstrow clear
+recast double data
+save "covid cases total.dta", replace
+*/
+
+
+/*
+//merge with covid cases per region, total, population per region
+use "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\data_stata_format.dta", clear
+
+rename woj region_id
+rename data date_from_Ariadna
+
+//creation of file for data merge, one time usage because date format is different - we need a unique ID for each date in text format
+//export excel ID data using "C:\Users\johns_000\Desktop\data format (wave1).xlsx", firstrow(variables) replace
+
+capture drop _merge
+merge 1:1 ID using "G:\Shared drives\Koronawirus\studies\data format wave1.dta"
+capture drop _merge
+merge m:1 region_id using "G:\Shared drives\Koronawirus\studies\population per region.dta"
+capture drop _merge
+merge m:m data region_id using "G:\Shared drives\Koronawirus\studies\covid cases per region.dta"
+keep if _merge==3
+capture drop _merge
+merge m:1 data using "G:\Shared drives\Koronawirus\studies\covid cases total.dta"
+keep if _merge==3
+capture drop _merge
+save "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\data_wave1.dta", replace
+*/
+
+
+
+ 
+///CREATION OF WHY AND WHO
+/*
+/// WHY
+import excel "3 szczepionka\classification of open ended questions\final_classification.xlsx", sheet("why") cellrange(A1:J6224) firstrow clear
+//import excel "3 szczepionka/classification of open ended questions/final_classification.xlsx", sheet("why") cellrange(A1:J6224) firstrow clear
+rename FINALWHY final_why
+save "3 szczepionka\classification of open ended questions\data_why.dta", replace
+//save "3 szczepionka/classification of open ended questions/data_why.dta", replace
+
+/// WHO
+import excel "3 szczepionka\classification of open ended questions\final_classification.xlsx", sheet("new who 20210412") cellrange(A1:K6224) firstrow clear
+save "3 szczepionka\classification of open ended questions\data_who.dta", replace
+//import excel "3 szczepionka/classification of open ended questions/final_classification.xlsx", sheet("new who 20210412") cellrange(A1:K6224) firstrow clear
+//save "3 szczepionka/classification of open ended questions/data_who.dta", replace
+
+/// merge with why and who
+use "3 szczepionka\20210310 data analysis (Arianda wave2)\WNE2_N3000_covid_stats.dta", clear
+//use "3 szczepionka/20210310 data analysis (Arianda wave2)/WNE2_N3000_covid_stats.dta", clear
+
+/// merge with why
+capture drop _merge
+merge 1:1 ID using "3 szczepionka\classification of open ended questions\data_why.dta"
+//merge 1:1 ID using "3 szczepionka/classification of open ended questions/data_why.dta"
+rename wave wave_why
+keep if _merge==3
+
+/// merge with who
+capture drop _merge
+capture merge 1:1 ID using "3 szczepionka\classification of open ended questions\data_who.dta"
+//capture merge 1:1 ID using "3 szczepionka/classification of open ended questions/data_who.dta"
+keep if _merge==3
+ drop _merge
+ 
+save "3 szczepionka\20210310 data analysis (Arianda wave2)\WNE2_N3000_covid_stats_who_why.dta", replace
+//save "3 szczepionka/20210310 data analysis (Arianda wave2)/WNE2_N3000_covid_stats_who_why.dta", replace
+*/
+
+/// "REFERRED TO" CREATION
+/*
+import excel "3 szczepionka\classification of open ended questions\final_classification.xlsx", sheet("(old 20210416) referred to") firstrow clear
+//import excel "3 szczepionka/classification of open ended questions/final_classification.xlsx", sheet("(old 20210416) referred to") firstrow clear
+destring ID, replace
+save "3 szczepionka\classification of open ended questions\referred_to.dta", replace
+//save "3 szczepionka/classification of open ended questions\referred_to.dta", replace
+
+/// "referred to" merge
+use "3 szczepionka/20210310 data analysis (Arianda wave2)\WNE2_N3000_covid_stats_who_why.dta", clear
+//use "3 szczepionka/20210310 data analysis (Arianda wave2)/WNE2_N3000_covid_stats_who_why.dta", clear
+capture drop _merge
+merge 1:1 ID using "3 szczepionka\classification of open ended questions\referred_to.dta"
+//merge 1:1 ID using "3 szczepionka/classification of open ended questions/referred_to.dta"
+keep if _merge==3
+drop _merge
+
+save "3 szczepionka\20210310 data analysis (Arianda wave2)\WNE2_N3000_covid_stats_who_why_refto.dta", replace
+//save "3 szczepionka/20210310 data analysis (Arianda wave2)/WNE2_N3000_covid_stats_who_why_refto.dta", replace
+*/
+
+
+/////////OLD CODE
+/*
+clear all
+
+import spss using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\archive\Zbior_WNE1_N3000_nowa_waga.sav", clear
+save "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\nowa_waga.dta", replace
+
+import spss using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\archive\Zbior_WNE1_N3000_data_1.sav", clear
+saveold "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\datetime.dta", version(13)
+
+capture cd "G:\Shared drives\Koronawirus\studies\5 data analysis (wave1)"
+capture cd "G:\Dyski współdzielone\Koronawirus\studies\5 data analysis (wave1)"
+capture cd "/Volumes/GoogleDrive/Shared drives/Koronawirus/studies/5 common data cleaning (wave1)"
+import spss using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\archive\data.sav", clear
+rename Id ID
+merge 1:1 ID using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\nowa_waga.dta"
+capture drop _merge
+merge 1:1 ID using "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\datetime.dta"
+capture drop _merge
+rename (waga waga2) (waga_old waga)
+saveold "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)\data_stata_format.dta", version(13)
+
+
+capture cd "G:\Shared drives\Koronawirus\studies\5 data analysis (wave1)"
+capture cd "G:\Dyski współdzielone\Koronawirus\studies\5 data analysis (wave1)"
+capture cd "/Volumes/GoogleDrive/Shared drives/Koronawirus/studies/5 common data cleaning (wave1)"
 use data_stata_format.dta, clear
 
 
