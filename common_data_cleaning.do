@@ -151,6 +151,7 @@ clear all
 capture cd "G:\Shared drives\Koronawirus\studies\5 common data cleaning (wave1)"
 capture cd "G:\Dyski współdzielone\Koronawirus\studies\5 common data cleaning (wave1)"
 capture cd "/Volumes/GoogleDrive/Shared drives/Koronawirus/studies/5 common data cleaning (wave1)"
+capture cd "G:\Shared drives\Koronawirus\studies\5 common data cleaning (puzzles Study 3 and Vaccines wave 1)"
 
 use "wave1_final_refto.dta"
 
@@ -225,12 +226,12 @@ display "% of records with comments: " `comment'_count_percent
 
 
 /// VACCINE PART DATA CLEANING
-rename (p37_1_r1	p37_1_r2	p37_1_r3	p37_1_r4	p37_1_r5	p37_1_r6	p37_1_r7 	p37_8_r1	p37_8_r2	p37_8_r3	p37_8_r4	p37) (v_prod_reputation	v_efficiency	v_safety	v_scarcity	v_other_want_it	v_scientific_authority	v_ease_persrest v_p_pay0	v_p_gets70	v_p_pays10	v_p_pays70	v_decision) 
-global vaccine_vars "v_prod_reputation	v_efficiency	v_safety	v_other_want_it	v_scientific_authority	v_ease_persrest v_p_gets70	v_p_pays10	v_p_pays70" // i leave out scarcity -- sth that supposedly everybody knows. we can't estimate all because of ariadna's error anyway
-global vaccine_short "v_prod_reputation	v_efficiency	v_safety    v_other_want_it	v_scientific_authority	v_ease_persrest"
+rename (p37_1_r1	p37_1_r2	p37_1_r3	p37_1_r4	p37_1_r5	p37_1_r6	p37_1_r7 	p37_8_r1	p37_8_r2	p37_8_r3	p37_8_r4	p37) (v_prod_reputation	v_efficiency	v_safety	v_scarcity	v_other_want_it	v_scientific_authority	v_vax_passport v_p_pay0	v_p_gets70	v_p_pays10	v_p_pays70	v_decision) 
+global vaccine_vars "v_prod_reputation	v_efficiency	v_safety	v_other_want_it	v_scientific_authority	v_vax_passport v_p_gets70	v_p_pays10	v_p_pays70" // i leave out scarcity -- sth that supposedly everybody knows. we can't estimate all because of ariadna's error anyway
+global vaccine_short "v_prod_reputation	v_efficiency	v_safety    v_other_want_it	v_scientific_authority	v_vax_passport"
 global prices "v_p_gets70	v_p_pays10	v_p_pays70" // v_p_pay0 is a base level
 
-label define v_dec_eng 1 "certainly not" 2 "rather not" 3 "rather yes" 4 "certainly yes"
+label define v_dec_eng 1 "definitely not" 2 "rather not" 3 "rather yes" 4 "definitely yes"
 label values v_decision v_dec_eng
 
 sort v_decision
@@ -259,12 +260,12 @@ drop if INCO
 
 
 
-gen vaxx_cert_yes =v_dec==4
+gen vaxx_def_yes =v_dec==4
 gen vaxx_rather_yes =v_dec==3
 gen vaxx_rather_no =v_dec==2
-gen vaxx_cert_no =v_dec==1
+gen vaxx_def_no =v_dec==1
 
-gen vaxx_yes=vaxx_cert_yes+vaxx_rather_yes
+gen vaxx_yes=vaxx_def_yes+vaxx_rather_yes
 
 
 // sum vaxx_yes [weight=waga] if male==1 & age>60
@@ -465,7 +466,7 @@ tab voting_short
 */
 
 // NEW, TO HAVE LEFT ON THE LEFT ETC.
-label define v_s_eng 3 "PiS(ruling, right)" 2 "centre" 1 "left" 4 "ultra-right" 5 "none or other", replace
+label define v_s_eng 3 "right (ruling party)" 2 "centre" 1 "left" 4 "ultra-right" 5 "none or other", replace
 recode voting_short (1=3) (2=2) (4=1) (7=4) (9=5)
 label values voting_short v_s_eng
 tab voting_short
@@ -610,7 +611,7 @@ gen o_efficiency=strpos(order_vaccine_persuasion, "2")
 gen o_safety=strpos(order_vaccine_persuasion, "3")
 gen o_other_want_it=strpos(order_vaccine_persuasion, "5") //no 4, there is a gap, be careful!
 gen o_scientific_authority=strpos(order_vaccine_persuasion, "6")
-gen o_ease_personal_restrictions=strpos(order_vaccine_persuasion, "7")
+gen o_vax_passport=strpos(order_vaccine_persuasion, "7")
 gen o_tested=strpos(order_vaccine_persuasion, "8")
 
 global noprefix_vax_short "prod_reputation efficiency safety other_want_it scientific_authority ease_personal_restrictions tested"
