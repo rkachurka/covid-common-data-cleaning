@@ -458,7 +458,7 @@ replace voting_short=2 if voting==3
 /*
 // OLD, OBSOLETE:
 // label define v_s_OLD 1 "Zjedn. Praw." 2 "KO, PL2050 SH" 4 "Lewica" 7 "Konfederacja" 9 "inna lub żadna", replace
-label define v_s_eng_OLD 1 "PiS(ruling, right)" 2 "centre" 4 "left" 7 "ultra-right" 9 "none or other", replace
+label define v_s_eng_OLD 1 "PiS(ruling, right)" 2 "center" 4 "left" 7 "ultra-right" 9 "none or other", replace
 label values voting_short v_s_eng_OLD
 tab voting_short
 
@@ -466,7 +466,7 @@ tab voting_short
 */
 
 // NEW, TO HAVE LEFT ON THE LEFT ETC.
-label define v_s_eng 3 "right (ruling party)" 2 "centre" 1 "left" 4 "ultra-right" 5 "none or other", replace
+label define v_s_eng 3 "right (ruling party)" 2 "center" 1 "left" 4 "ultra-right" 5 "none or other", replace
 recode voting_short (1=3) (2=2) (4=1) (7=4) (9=5)
 label values voting_short v_s_eng
 tab voting_short
